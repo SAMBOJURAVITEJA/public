@@ -70,7 +70,7 @@ var hasPriority = (requestObject) => {
     return true;
   } else {
     response.status(400);
-    response.send("Invalid Priority Category");
+    response.send("Invalid Todo Priority");
   }
 };
 var hasStatus = (requestObject) => {
@@ -83,7 +83,7 @@ var hasStatus = (requestObject) => {
     return true;
   } else {
     response.status(400);
-    response.send("Invalid Status Category");
+    response.send("Invalid Todo Status");
   }
 };
 var hasStatusAndPriority = (requestObject) => {
