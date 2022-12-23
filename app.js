@@ -1,8 +1,9 @@
 let express = require("express");
 let DB = null;
 let app = express();
-let isValid = require("isValid/date-fns");
-let format = require("format/date-fns");
+app.use(express.json());
+let isValid = require("date-fns/isValid");
+let format = require("date-fns/format");
 module.exports = app;
 let sqlite3 = require("sqlite3");
 let { open } = require("sqlite");
@@ -40,6 +41,7 @@ var categoryAndPriority = (requestObject) => {
   }
 };
 var category = (requestObject) => {
+  console.log("Loose");
   let { category } = requestObject;
   if (category !== undefined) {
     return true;
@@ -65,6 +67,7 @@ var hasPriority = (requestObject) => {
 };
 var hasStatus = (requestObject) => {
   let { status } = requestObject;
+  console.log(status);
   if (status !== undefined) {
     return true;
   } else {
@@ -80,7 +83,13 @@ var hasStatusAndPriority = (requestObject) => {
   }
 };
 app.get("/todos/", async (request, response) => {
-  let { priority, category, due_date, search_q = "", status } = request.query;
+  let {
+    priority = "",
+    category = "",
+    due_date = "",
+    search_q = "",
+    status = "",
+  } = request.query;
   console.log(search_q);
   let data = "";
   let finalresult = null;
@@ -95,6 +104,7 @@ app.get("/todos/", async (request, response) => {
                 and priority like "${priority}";`;
       break;
     case category(request.query):
+      console.log("win");
       data = `select * from todo where category like "${category}";`;
       break;
 
@@ -125,8 +135,7 @@ app.get("/todos/", async (request, response) => {
               from 
               todo 
               where 
-             todo.status like "${status}"
-               ;   
+            status like "${status}";   
                `;
       break;
 
@@ -155,6 +164,7 @@ app.get("/todos/:todoId/", async (request, response) => {
 app.get("/agenda/", async (request, response) => {
   let { date } = request.query;
   let formatDate = format(date, "yyyy-MM-dd");
+  console.log(formatDate);
   if (isValid(formatDate)) {
     let data = `select * from todo where due_date=${date}`;
     let finalresult = await DB.get(data);
@@ -166,12 +176,19 @@ app.get("/agenda/", async (request, response) => {
 });
 
 app.post("/todos/", async (request, response) => {
-  let { id, todo, priority, status, category, due_date } = request.body;
-  let data = `insert into todo (id,todo,priority,status,category,due_date)
+  let { id, todo, priority, status, category, dueDate } = request.body;
+  let formatDate = format(dueDate, "yyyy-MM-dd");
+  console.log(formatDate);
+  if (isValid(formatDate)) {
+    let data = `insert into todo (id,todo,priority,status,category,due_date)
     values
-    (${id},"${todo}","${priority}","${status}",${category},${due_date});`;
-  let finalresult = await DB.run(data);
-  response.send("Todo Successfully Added");
+    (${id},"${todo}","${priority}","${status}","${category}",${dueDate});`;
+    let finalresult = await DB.run(data);
+    response.send("Todo Successfully Added");
+  } else {
+    response.status(400);
+    response.send("Invalid Due Date");
+  }
 });
 
 app.put("/todos/:todoId/", async (request, response) => {
@@ -179,7 +196,7 @@ app.put("/todos/:todoId/", async (request, response) => {
     status = "",
     priority = "",
     todo = "",
-    due_date = "",
+    dueDate = "",
     category = "",
   } = request.body;
   let { todoId } = request.params;
@@ -209,21 +226,23 @@ app.put("/todos/:todoId/", async (request, response) => {
       response.send("Todo Updated");
       break;
     case category(request.body):
-      data = ` update todo set category ="${category}" where id=${todoId}`;
+      console.log("ravi");
+      data = ` update todo set category ="${category}" where id=${todoId};`;
       finalresult = await DB.run(data);
       response.send("Category Updated");
       break;
     default:
-      let { date } = request.body;
-      let formatDate = format(date, "yyyy-MM-dd");
+      let { dueDate } = request.body;
+      let formatDate = format(dueDate, "yyyy-MM-dd");
       if (isValid(formatDate)) {
-        let data = `update todo set due_date=${date} where id=${todoId};`;
+        let data = `update todo set due_date=${dueDate} where id=${todoId};`;
         let finalresult = await DB.run(data);
         response.send(finalresult);
       } else {
         response.status(400);
         response.send("Invalid Due Date");
       }
+      break;
   }
 });
 
@@ -231,5 +250,5 @@ app.delete("/todos/:todoId/", async (request, response) => {
   let { todoId } = request.params;
   let data = `delete from todo where todo.id=${todoId}`;
   let finalresult = await DB.run(data);
-  response.send("TODO DELETED");
+  response.send("Todo Deleted");
 });
