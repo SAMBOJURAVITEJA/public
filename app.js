@@ -43,10 +43,14 @@ var categoryAndPriority = (requestObject) => {
 var category = (requestObject) => {
   console.log("Loose");
   let { category } = requestObject;
-  if (category !== undefined) {
+  if (
+    category !== undefined &&
+    (category === "WORK" || category === "HOME" || category === "LEARNING")
+  ) {
     return true;
   } else {
-    return false;
+    response.status(400);
+    response.send("Invalid Todo Category");
   }
 };
 
@@ -59,19 +63,27 @@ var hasTodo = (requestObject) => {
 
 var hasPriority = (requestObject) => {
   let { priority } = requestObject;
-  if (priority !== undefined) {
+  if (
+    priority !== undefined &&
+    (priority === "HIGH" || priority === "MEDIUM" || priority === "LOW")
+  ) {
     return true;
   } else {
-    return false;
+    response.status(400);
+    response.send("Invalid Priority Category");
   }
 };
 var hasStatus = (requestObject) => {
   let { status } = requestObject;
   console.log(status);
-  if (status !== undefined) {
+  if (
+    status !== undefined &&
+    (status === "TO DO" || status == "IN PROGRESS" || status === "DONE")
+  ) {
     return true;
   } else {
-    return false;
+    response.status(400);
+    response.send("Invalid Status Category");
   }
 };
 var hasStatusAndPriority = (requestObject) => {
