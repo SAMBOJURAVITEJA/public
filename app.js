@@ -43,14 +43,10 @@ var categoryAndPriority = (requestObject) => {
 var category = (requestObject) => {
   console.log("Loose");
   let { category } = requestObject;
-  if (
-    category !== undefined &&
-    (category === "WORK" || category === "HOME" || category === "LEARNING")
-  ) {
+  if (category !== undefined) {
     return true;
   } else {
-    response.status(400);
-    response.send("Invalid Todo Category");
+    return false;
   }
 };
 
@@ -62,28 +58,21 @@ var hasTodo = (requestObject) => {
 };
 
 var hasPriority = (requestObject) => {
+  console.log("ravi");
   let { priority } = requestObject;
-  if (
-    priority !== undefined &&
-    (priority === "HIGH" || priority === "MEDIUM" || priority === "LOW")
-  ) {
+  if (priority !== undefined) {
     return true;
   } else {
-    response.status(400);
-    response.send("Invalid Todo Priority");
+    return false;
   }
 };
 var hasStatus = (requestObject) => {
   let { status } = requestObject;
   console.log(status);
-  if (
-    status !== undefined &&
-    (status === "TO DO" || status == "IN PROGRESS" || status === "DONE")
-  ) {
+  if (status !== undefined) {
     return true;
   } else {
-    response.status(400);
-    response.send("Invalid Todo Status");
+    return false;
   }
 };
 var hasStatusAndPriority = (requestObject) => {
@@ -117,7 +106,16 @@ app.get("/todos/", async (request, response) => {
       break;
     case category(request.query):
       console.log("win");
-      data = `select * from todo where category like "${category}";`;
+      if (
+        category === "WORK" ||
+        category === "HOME" ||
+        category === "LEARNING"
+      ) {
+        data = `select * from todo where category like "${category}";`;
+      } else {
+        response.status(400);
+        response.send("Invalid Todo Category");
+      }
       break;
 
     case hasStatusAndPriority(request.query):
@@ -132,16 +130,22 @@ app.get("/todos/", async (request, response) => {
     AND todo.priority like '${priority}';`;
       break;
     case hasPriority(request.query):
-      data = `
+      if (priority === "HIGH" || priority === "MEDIUM" || priority === "LOW") {
+        data = `
            select 
            *
            from 
            todo 
           where todo.priority like "${priority}" ;  
              `;
+      } else {
+        response.status(400);
+        response.send("Invalid Todo Priority");
+      }
       break;
     case hasStatus(request.query):
-      data = `
+      if (status === "TO DO" || status == "IN PROGRESS" || status === "DONE") {
+        data = `
              select 
                 *
               from 
@@ -149,6 +153,10 @@ app.get("/todos/", async (request, response) => {
               where 
             status like "${status}";   
                `;
+      } else {
+        response.status(400);
+        response.send("Invalid Todo Status");
+      }
       break;
 
     default:
@@ -174,33 +182,23 @@ app.get("/todos/:todoId/", async (request, response) => {
   response.send(finalresult);
 });
 app.get("/agenda/", async (request, response) => {
+  console.log("ravi");
   let { date } = request.query;
-  let formatDate = format(date, "yyyy-MM-dd");
+  let formatDate = format(new Date(2022, 12, 12), "yyyy-MM-dd");
   console.log(formatDate);
-  if (isValid(formatDate)) {
-    let data = `select * from todo where due_date=${date}`;
-    let finalresult = await DB.get(data);
-    response.send(finalresult);
-  } else {
-    response.status(400);
-    response.send("Invalid Due Date");
-  }
+  console.log(typeof formatDate);
+  let data = `select * from todo where due_date=${formatDate}`;
+  let finalresult = await DB.get(data);
+  response.send(finalresult);
 });
 
 app.post("/todos/", async (request, response) => {
   let { id, todo, priority, status, category, dueDate } = request.body;
-  let formatDate = format(dueDate, "yyyy-MM-dd");
-  console.log(formatDate);
-  if (isValid(formatDate)) {
-    let data = `insert into todo (id,todo,priority,status,category,due_date)
+  let data = `insert into todo (id,todo,priority,status,category,due_date)
     values
     (${id},"${todo}","${priority}","${status}","${category}",${dueDate});`;
-    let finalresult = await DB.run(data);
-    response.send("Todo Successfully Added");
-  } else {
-    response.status(400);
-    response.send("Invalid Due Date");
-  }
+  let finalresult = await DB.run(data);
+  response.send("Todo Successfully Added");
 });
 
 app.put("/todos/:todoId/", async (request, response) => {
@@ -216,18 +214,28 @@ app.put("/todos/:todoId/", async (request, response) => {
   let finalresult = "";
   switch (true) {
     case hasStatus(request.body):
-      data = `update todo
+      if (status === "TO DO" || status == "IN PROGRESS" || status === "DONE") {
+        data = `update todo
             set status ="${status}"
             where id= ${todoId};`;
-      finalresult = await DB.run(data);
-      response.send("Status Updated");
+        finalresult = await DB.run(data);
+        response.send("Status Updated");
+      } else {
+        response.status(400);
+        response.send("Invalid Todo Status");
+      }
       break;
     case hasPriority(request.body):
-      data = `update todo
+      if (priority === "HIGH" || priority === "MEDIUM" || priority === "LOW") {
+        data = `update todo
             set priority ="${priority}"
             where id =${todoId};`;
-      finalresult = await DB.run(data);
-      response.send("Priority Updated");
+        finalresult = await DB.run(data);
+        response.send("Priority Updated");
+      } else {
+        response.status(400);
+        response.send("Invalid Todo Priority");
+      }
       break;
 
     case hasTodo(request.body):
@@ -239,14 +247,23 @@ app.put("/todos/:todoId/", async (request, response) => {
       break;
     case category(request.body):
       console.log("ravi");
-      data = ` update todo set category ="${category}" where id=${todoId};`;
-      finalresult = await DB.run(data);
-      response.send("Category Updated");
+      if (
+        category === "WORK" ||
+        category === "HOME" ||
+        category === "LEARNING"
+      ) {
+        data = ` update todo set category ="${category}" where id=${todoId};`;
+        finalresult = await DB.run(data);
+        response.send("Category Updated");
+      } else {
+        response.status(400);
+        response.send("Invalid Todo Category");
+      }
       break;
     default:
       let { dueDate } = request.body;
-      let formatDate = format(dueDate, "yyyy-MM-dd");
-      if (isValid(formatDate)) {
+      console.log(dueDate);
+      if (isValid(dueDate)) {
         let data = `update todo set due_date=${dueDate} where id=${todoId};`;
         let finalresult = await DB.run(data);
         response.send(finalresult);
